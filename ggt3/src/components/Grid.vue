@@ -1,6 +1,7 @@
 <template>
 <div class="container">
     <h1 id="header">{{ headerText }}</h1>
+    <h2>You are {{ me }}</h2>
     <div v-for="row in grid" :key="row" class="row">
       <div v-for="cell in row" :key="cell" class="cell" @click="play(cell)">
         <span :class="cell.mark ? 'visible-text' : ''">{{ cell.mark || 'X' }}</span>
@@ -11,7 +12,7 @@
 
 <script>
 // @ is an alias to /src
-import {connectToFirebase, getRefs, setDefaultsInFirebase} from "../db/logic"
+import {connectToFirebase, getGridRef, getWhoseTurnIsItRef, setDefaultsInFirebase, getConnectionsRef} from "../db/logic"
 
 export default {
   name: 'Grid',
@@ -24,26 +25,34 @@ export default {
     whoseTurnIsIt: 'X',
     win: false,
     catsGame: false,
+    winner: '',
+    me: ''
   }),
   computed: {
     headerText(){
       if (this.win) {
-        return `${this.whoseTurnIsIt} WINS`
+        return `${this.winner} WINS`
       } 
       if (this.catsGame) {
         return `😸`
       }
       return `TIC TAC TOE`
+    },
+    itsMyTurn() {
+      return this.me === this.whoseTurnIsIt
     }
   },
   mounted() {
+    // assign player their mark
     connectToFirebase()
+    console.log('setting me', JSON.parse(JSON.stringify(this.me)))
     setDefaultsInFirebase(this.grid)
-    getRefs()
+    this.listenForConnections()
+    this.listenForPlays()
   },
   methods: {
     play(cell) {
-      if (cell.mark || this.win) {
+      if (cell.mark || this.win || !this.itsMyTurn) {
         return
       }
       // mark this cell (in grid) as whoseTurnIsIt (x or o)
@@ -53,8 +62,14 @@ export default {
       this.grid[locationRow][locationCol].mark = newMark 
       this.checkWin()
       // change whoseTurnIsIt to the other player
-      if (this.win) return
-      this.whoseTurnIsIt = this.whoseTurnIsIt === 'X' ? 'O' : 'X'
+      if (this.win) {
+        this.winner = this.whoseTurnIsIt
+      }
+      if (!this.win) {
+        this.whoseTurnIsIt = this.whoseTurnIsIt === 'X' ? 'O' : 'X'
+      }
+      this.updateGridInFirebase()
+      this.updateWhoseTurnIsItFirebase()
     },
     checkRow(row) {
       // [{location: '20', mark: ''}, {location: '21', mark: ''}, {location: '22', mark: ''}]
@@ -136,6 +151,61 @@ export default {
         })
       })
       return fullGrid
+    },
+    updateGridInFirebase() {
+      const gridRef = getGridRef()
+      gridRef.set(this.grid)
+    },
+    updateWhoseTurnIsItFirebase() {
+      const whoseTurnIsItRef = getWhoseTurnIsItRef()
+      whoseTurnIsItRef.set(this.whoseTurnIsIt)
+    },
+    listenForConnections() {
+      const innerThis = this
+      const connectionsRef = getConnectionsRef()
+      connectionsRef.on("value",function (snap) {
+          const numPlayers = snap.numChildren()
+          if (numPlayers < 2) {
+              // first player!
+              console.log('setting me to X')
+              innerThis.me = "X"
+          } else {
+              if (!innerThis.me) {
+                  console.log('setting me to O')
+                  // me hasn't been set (second player) -> they're "o"
+                  innerThis.me = "O"
+              }
+          }
+      })
+    },
+    listenForPlays() {
+      const innerThis = this
+      const whoseTurnIsItRef = getWhoseTurnIsItRef()
+      const gridRef = getGridRef()
+      whoseTurnIsItRef.on("value", function(snap) {
+        if (snap.val()) {
+          console.log(`turn changed ${snap.val()}`)
+          innerThis.whoseTurnIsIt = snap.val()
+        }
+      })
+      gridRef.on("child_changed", function(snap) {
+        if (snap.val()) {
+          console.log(`grid changed ${snap.val()}`)
+          innerThis.getGrid()
+        }
+      })
+    },
+    getGrid() {
+      const gridRef = getGridRef()
+      gridRef.get().then((data) => {
+        console.log('get grid data', data.val())
+        this.grid = data.val()
+        this.checkWin()
+        if (this.win) {
+          // if win, set winner to whose turn it WAS
+          this.winner = this.whoseTurnIsIt
+        }
+      })
     }
   }
 }
