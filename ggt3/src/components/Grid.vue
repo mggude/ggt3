@@ -11,6 +11,7 @@
 
 <script>
 // @ is an alias to /src
+import {connectToFirebase, getRefs, setDefaultsInFirebase} from "../db/logic"
 
 export default {
   name: 'Grid',
@@ -21,15 +22,24 @@ export default {
         [{location: '20', mark: ''}, {location: '21', mark: ''}, {location: '22', mark: ''}],
     ],
     whoseTurnIsIt: 'X',
-    win: false
+    win: false,
+    catsGame: false,
   }),
   computed: {
     headerText(){
       if (this.win) {
-        return `WINNER`
+        return `${this.whoseTurnIsIt} WINS`
       } 
+      if (this.catsGame) {
+        return `😸`
+      }
       return `TIC TAC TOE`
     }
+  },
+  mounted() {
+    connectToFirebase()
+    setDefaultsInFirebase(this.grid)
+    getRefs()
   },
   methods: {
     play(cell) {
@@ -41,11 +51,10 @@ export default {
       const locationRow = cell.location[0]
       const locationCol = cell.location[1]
       this.grid[locationRow][locationCol].mark = newMark 
-      //this.checkWin()
-      console.log("did you win?" + this.checkWin());
+      this.checkWin()
       // change whoseTurnIsIt to the other player
+      if (this.win) return
       this.whoseTurnIsIt = this.whoseTurnIsIt === 'X' ? 'O' : 'X'
-
     },
     checkRow(row) {
       // [{location: '20', mark: ''}, {location: '21', mark: ''}, {location: '22', mark: ''}]
@@ -90,16 +99,22 @@ export default {
           win = true
         }
       })
+      this.win = win
+      if (win) return
       this.grid.forEach(row => {
         if (this.checkRow(row)) {
           win = true
         }
       })
+      this.win = win
+      if (win) return
       if (this.checkDiagonAlley()) {
         win = true
       }
       this.win = win
-      return win
+      if (!win) {
+        this.catsGame = this.checkCat()
+      }
     },
     checkDiagonAlley() {
       const middleCell = this.grid[1][1].mark // {location: '21', mark: ''}
@@ -111,6 +126,17 @@ export default {
       if (middleCell === topLeftCell && middleCell === bottomRightCell) return true
       if (middleCell === topRightCell && middleCell === bottomLeftCell) return true
     },
+    checkCat() {
+      let fullGrid = true;
+      this.grid.forEach(row => {
+        row.forEach(cell => {
+          if (cell.mark === '') {
+            fullGrid = false
+          }
+        })
+      })
+      return fullGrid
+    }
   }
 }
 </script>
