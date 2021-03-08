@@ -1,6 +1,5 @@
-##
-Tic Tac Toe deployed here: http://ggt3.surge.sh/
-
+## Deployed
+http://ggt3.surge.sh/
 Arrive and await your opponent!
 
 ## Prompt
