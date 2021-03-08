@@ -1,3 +1,8 @@
+##
+Tic Tac Toe deployed here: http://ggt3.surge.sh/
+
+Arrive and await your opponent!
+
 ## Prompt
 Write an application that allows two people, on different computers,
 to play a game of tic-tac-toe together.
