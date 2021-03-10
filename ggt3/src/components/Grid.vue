@@ -13,6 +13,7 @@
   </div>
 </template>
 <script>
+
 // @ is an alias to /src
 import {
   connectToFirebase,
@@ -20,7 +21,7 @@ import {
   getWhoseTurnIsItRef,
   setDefaultsInFirebase,
   getConnectionsRef,
-} from "../db/logic";
+} from "../db/logic"
 
 export default {
   name: "Grid",
@@ -35,25 +36,24 @@ export default {
   computed: {
     headerText() {
       if (this.win) {
-        return `${this.winner} WINS`;
+        return `${this.winner} WINS!`
       }
       if (this.catsGame) {
-        return `😸`;
+        return "😸"
       }
-      return `TIC TAC TOE`;
+      return "TIC TAC TOE"
     },
     itsMyTurn() {
-      return this.me === this.whoseTurnIsIt;
+      return this.me === this.whoseTurnIsIt
     },
   },
   mounted() {
     // assign player their mark
-    this.resetGrid();
-    connectToFirebase();
-    console.log("setting me", JSON.parse(JSON.stringify(this.me)));
-    setDefaultsInFirebase(this.grid);
-    this.listenForConnections();
-    this.listenForPlays();
+    this.resetGrid()
+    connectToFirebase()
+    setDefaultsInFirebase(this.grid)
+    this.listenForConnections()
+    this.listenForPlays()
   },
   methods: {
     getDefaultGrid() {
@@ -73,172 +73,165 @@ export default {
           { location: "21", mark: "" },
           { location: "22", mark: "" },
         ],
-      ];
+      ]
     },
     play(cell) {
       if (cell.mark || this.win || !this.itsMyTurn) {
-        return;
+        return
       }
       // mark this cell (in grid) as whoseTurnIsIt (x or o)
-      const newMark = this.whoseTurnIsIt;
-      const locationRow = cell.location[0];
-      const locationCol = cell.location[1];
-      this.grid[locationRow][locationCol].mark = newMark;
-      this.checkWin();
+      const newMark = this.whoseTurnIsIt
+      const locationRow = cell.location[0]
+      const locationCol = cell.location[1]
+      this.grid[locationRow][locationCol].mark = newMark
+      this.checkWin()
       // change whoseTurnIsIt to the other player
       if (this.win) {
-        this.winner = this.whoseTurnIsIt;
+        this.winner = this.whoseTurnIsIt
       }
       if (!this.win) {
-        this.whoseTurnIsIt = this.whoseTurnIsIt === "X" ? "O" : "X";
+        this.whoseTurnIsIt = this.whoseTurnIsIt === "X" ? "O" : "X"
       }
-      this.updateGridInFirebase();
-      this.updateWhoseTurnIsItFirebase();
+      this.updateGridInFirebase()
+      this.updateWhoseTurnIsItFirebase()
     },
     checkRow(row) {
-      // [{location: '20', mark: ''}, {location: '21', mark: ''}, {location: '22', mark: ''}]
-      let win = true;
-      const firstCellMark = row[0].mark; // => 'x'
+      let win = true
+      const firstCellMark = row[0].mark
       row.forEach((cell) => {
         if (cell.mark === "") {
-          win = false;
+          win = false
         }
-        // {location: '20', mark: ''}
         if (firstCellMark !== cell.mark) {
-          win = false;
+          win = false
         }
-      });
-      return win;
+      })
+      return win
     },
     getCol(colNum) {
-      const col = [];
+      const col = []
       this.grid.forEach((row) => {
-        col.push(row[colNum]);
-      });
-      return col;
+        col.push(row[colNum])
+      })
+      return col
     },
+    // Future dev: combine with checkRow
     checkCol(col) {
-      let win = true;
-      const firstCellMark = col[0].mark; // => 'x'
+      let win = true
+      const firstCellMark = col[0].mark
       col.forEach((cell) => {
         if (cell.mark === "") {
-          win = false;
+          win = false
         }
-        // {location: '20', mark: ''}
         if (firstCellMark !== cell.mark) {
-          win = false;
+          win = false
         }
-      });
-      return win;
+      })
+      return win
     },
     checkWin() {
       let win = false;
       [0, 1, 2].forEach((index) => {
         if (this.checkCol(this.getCol(index))) {
-          win = true;
+          win = true
         }
-      });
-      this.win = win;
-      if (win) return;
+      })
+      this.win = win
+      if (win) return
       this.grid.forEach((row) => {
         if (this.checkRow(row)) {
-          win = true;
+          win = true
         }
-      });
-      this.win = win;
-      if (win) return;
+      })
+      this.win = win
+      if (win) return
       if (this.checkDiagonAlley()) {
-        win = true;
+        win = true
       }
-      this.win = win;
+      this.win = win
       if (!win) {
-        this.catsGame = this.checkCat();
+        this.catsGame = this.checkCat()
       }
     },
     checkDiagonAlley() {
-      const middleCell = this.grid[1][1].mark; // {location: '21', mark: ''}
-      const topLeftCell = this.grid[0][0].mark;
-      const bottomRightCell = this.grid[2][2].mark;
-      const topRightCell = this.grid[0][2].mark;
-      const bottomLeftCell = this.grid[2][0].mark;
-      if (middleCell === "") return false;
+      const middleCell = this.grid[1][1].mark // {location: '21', mark: ''}
+      const topLeftCell = this.grid[0][0].mark
+      const bottomRightCell = this.grid[2][2].mark
+      const topRightCell = this.grid[0][2].mark
+      const bottomLeftCell = this.grid[2][0].mark
+      if (middleCell === "") return false
       if (middleCell === topLeftCell && middleCell === bottomRightCell)
-        return true;
+        return true
       if (middleCell === topRightCell && middleCell === bottomLeftCell)
-        return true;
+        return true
     },
     checkCat() {
-      let fullGrid = true;
+      let fullGrid = true
       this.grid.forEach((row) => {
         row.forEach((cell) => {
           if (cell.mark === "") {
-            fullGrid = false;
+            fullGrid = false
           }
-        });
-      });
-      return fullGrid;
+        })
+      })
+      return fullGrid
     },
     updateGridInFirebase() {
-      const gridRef = getGridRef();
-      gridRef.set(this.grid);
+      const gridRef = getGridRef()
+      gridRef.set(this.grid)
     },
     updateWhoseTurnIsItFirebase() {
-      const whoseTurnIsItRef = getWhoseTurnIsItRef();
-      whoseTurnIsItRef.set(this.whoseTurnIsIt);
+      const whoseTurnIsItRef = getWhoseTurnIsItRef()
+      whoseTurnIsItRef.set(this.whoseTurnIsIt)
     },
     listenForConnections() {
-      const innerThis = this;
-      const connectionsRef = getConnectionsRef();
-      connectionsRef.on("value", function (snap) {
-        const numPlayers = snap.numChildren();
+      const connectionsRef = getConnectionsRef()
+      connectionsRef.on("value", (snap) => {
+        const numPlayers = snap.numChildren()
         if (numPlayers < 2) {
           // first player!
-          console.log("setting me to X");
-          innerThis.me = "X";
+          console.log("setting me to X")
+          this.me = "X"
         } else {
-          if (!innerThis.me) {
-            console.log("setting me to O");
+          if (!this.me) {
+            console.log("setting me to O")
             // me hasn't been set (second player) -> they're "o"
-            innerThis.me = "O";
+            this.me = "O"
           }
         }
-      });
+      })
     },
     listenForPlays() {
-      const innerThis = this;
-      const whoseTurnIsItRef = getWhoseTurnIsItRef();
-      const gridRef = getGridRef();
-      whoseTurnIsItRef.on("value", function (snap) {
+      const whoseTurnIsItRef = getWhoseTurnIsItRef()
+      const gridRef = getGridRef()
+      whoseTurnIsItRef.on("value", (snap) => {
         if (snap.val()) {
-          console.log(`turn changed ${snap.val()}`);
-          innerThis.whoseTurnIsIt = snap.val();
+          this.whoseTurnIsIt = snap.val()
         }
-      });
-      gridRef.on("child_changed", function (snap) {
+      })
+      gridRef.on("child_changed", (snap) => {
         if (snap.val()) {
-          console.log(`grid changed ${snap.val()}`);
-          innerThis.getGrid();
+          this.getGrid()
         }
-      });
+      })
     },
     getGrid() {
-      const gridRef = getGridRef();
+      const gridRef = getGridRef()
       gridRef.get().then((data) => {
-        console.log("get grid data", data.val());
-        this.grid = data.val();
-        this.checkWin();
+        this.grid = data.val()
+        this.checkWin()
         if (this.win) {
           // if win, set winner to whose turn it WAS
-          this.winner = this.whoseTurnIsIt;
+          this.winner = this.whoseTurnIsIt
         }
-      });
+      })
     },
     resetGrid() {
-      this.grid = this.getDefaultGrid();
-      setDefaultsInFirebase(this.grid);
+      this.grid = this.getDefaultGrid()
+      setDefaultsInFirebase(this.grid)
     },
   },
-};
+}
 </script>
 
 <style lang="scss">

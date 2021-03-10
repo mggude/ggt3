@@ -11,11 +11,11 @@
     messagingSenderId: "400041244702",
     appId: "1:400041244702:web:a635b775df8c0813d1160f",
     measurementId: "G-V36J7CJW8M"
-  };
+  }
   // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  firebase.analytics();
+  firebase.initializeApp(firebaseConfig)
+  firebase.analytics()
 
-  const db = firebase.database();
+  const db = firebase.database()
 
-  export {db};
+  export {db}
