@@ -2,6 +2,18 @@
 http://ggt3.surge.sh/
 Arrive and await your opponent!
 
+## Usage
+To run locally, `cd ggt3 && npm i && npm run serve`
+
+## Technologies
+Vue | Firebase
+
+## Future Development
+* Mobile responsiveness
+* Add unit tests
+* Option to play against computer
+* Handle more than 2 players gracefully
+
 ## Prompt
 Write an application that allows two people, on different computers,
 to play a game of tic-tac-toe together.
